@@ -13,5 +13,9 @@ func main() {
 	nerv := neron.Neron
 	nerv.NewNode(2, 2, 3, 2)
 	nerv.RandomNode()
-	fmt.Println("nerv.H", len(nerv.NODE[0]))
+	for i := range nerv.Input {
+		nerv.Input[i] = rand.Float64()
+	}
+	fmt.Println(nerv.Process())
+
 }

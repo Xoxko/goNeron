@@ -1,7 +1,7 @@
 package neron
 
 import (
-	"fmt"
+	"math"
 	"math/rand"
 	"time"
 )
@@ -12,10 +12,10 @@ type neron_cash struct {
 	NODE   [][]node
 	Output []node
 	Input  []float64
-	H      []float64
 }
 type node struct {
 	W []float64
+	H float64
 }
 
 /*init sistem Neron*/
@@ -25,19 +25,18 @@ func (nerv *neron_cash) NewNode(input, output, W_size, W_deep uint32) {
 	//Создание кол-во входных/выходных сигналов
 	nerv.Input = make([]float64, input)
 	nerv.Output = make([]node, output)
-	nerv.H = make([]float64, W_size)
 
-	for i := range nerv.NODE {
+	for X := range nerv.NODE {
 		//Создаем второй слой двумерного массива NODE[]
-		nerv.NODE[i] = make([]node, W_size)
+		nerv.NODE[X] = make([]node, W_size)
 
-		for j := range nerv.NODE[i] {
+		for Y := range nerv.NODE[X] {
 			//Создаем на первом слое синапсы, равными входных сигналов
-			if i == 0 {
-				nerv.NODE[i][j].W = make([]float64, len(nerv.Input))
+			if X == 0 {
+				nerv.NODE[X][Y].W = make([]float64, len(nerv.Input))
 			} else {
 				//Проходим по каждой node и создаем массив синапсов
-				nerv.NODE[i][j].W = make([]float64, W_size)
+				nerv.NODE[X][Y].W = make([]float64, W_size)
 			}
 		}
 	}
@@ -67,52 +66,41 @@ func (nerv *neron_cash) RandomNode() {
 /*
 @addiction -> NewNode -> RandomNode
 #Обработка данных
-Массив данных должны быть равен массиву
-входных нейронов, в случае если не равны,
-вернет ошибку и нулевые значения в массиве
 */
-func (nerv *neron_cash) Process(input []float64) ([]float64, error) {
+func (nerv *neron_cash) Process() []float64 {
 	output := make([]float64, len(nerv.Output))
-	if len(nerv.H) != len(input) {
-		return output, fmt.Errorf("error: input data size nerv.H(%v) != input(%v)", len(nerv.H), len(input))
-	}
-
-	nerv.Input = input
-
+	//расчет первых слоев
 	for Y := range nerv.NODE[0] {
 		for W := range nerv.NODE[0][Y].W {
-			nerv.H[Y] = nerv.NODE[0][Y].W[W]*nerv.Input[W] + nerv.H[Y]
+			nerv.NODE[0][Y].H += nerv.NODE[0][Y].W[W] * nerv.Input[W]
 		}
-
+		nerv.NODE[0][Y].Sigmoid()
 	}
-
-	for X := range nerv.NODE {
+	//nerv.Sigmoid()
+	for X := 1; X < len(nerv.NODE); X++ {
 		for Y := range nerv.NODE[X] {
 			for W := range nerv.NODE[X][Y].W {
-				nerv.H[Y] = nerv.NODE[X][Y].W[W]*nerv.Input[W] + nerv.H[Y]
+				nerv.NODE[X][Y].H += nerv.NODE[X][Y].W[W] * nerv.NODE[X-1][W].H
 			}
-
+			nerv.NODE[X][Y].Sigmoid()
 		}
 	}
-
+	//Прохождение последнего слоя
 	for X := range nerv.Output {
 		for W := range nerv.Output[X].W {
-			nerv.Output[X].W[W] = (rand.Float64() * 2) - 1
+			nerv.Output[X].H += nerv.Output[X].W[W] * nerv.NODE[len(nerv.NODE)-1][W].H
 		}
+		nerv.Output[X].Sigmoid()
 	}
 
-	return output, nil
-}
-func (n *node) Len() int {
-	return len(n.W)
-}
+	//передача аргументов на выход
+	for Y := range nerv.Output {
+		output[Y] = nerv.Output[Y].H
+	}
 
-// @addiction -> W_point
-func (n *node) Summation(W_number int, EN float64) {
-
+	return output
 }
 
-// @addiction -> Summation
-func (n *node) Sigmoid() {
-
+func (nerv *node) Sigmoid() {
+	nerv.H = math.Tanh(nerv.H)
 }
