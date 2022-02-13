@@ -98,7 +98,6 @@ func (nerv *neron_cash) Process() []float64 {
 	for Y := range nerv.Output {
 		output[Y] = nerv.Output[Y].H
 	}
-	nerv.free_summer()
 	return output
 }
 
@@ -107,8 +106,7 @@ func (nerv *node) Sigmoid() {
 }
 
 //очистка в NODE.H
-func (nerv *neron_cash) free_summer() {
-	rand.Seed(time.Now().UnixNano())
+func (nerv *neron_cash) Free_summer() {
 	for X := range nerv.NODE {
 		for Y := range nerv.NODE[X] {
 			nerv.NODE[X][Y].H = 0
@@ -119,26 +117,27 @@ func (nerv *neron_cash) free_summer() {
 	}
 }
 
-func (nerv *neron_cash) Training(educ []float64) error {
+func (nerv *neron_cash) Training(educ []float64, speed float64) error {
+
 	if len(nerv.Output) != len(educ) {
 		return fmt.Errorf("Error: len(educ != output)")
 	}
 
 	//Вычисляем разницу ошибки
-	difference := make([]float64, len(nerv.NODE))
+	difference := make([]float64, len(nerv.Output))
 	for i := range nerv.Output {
-		difference[i] = nerv.Output[i].H - educ[i]
+		difference[i] = nerv.Output[i].H - educ[i] - nerv.Output[i].H
 	}
-	///////////дописать ++++++++++++++++=
-	delta[Y] = nerv.Output[Y].H - (1 - (nerv.Output[Y].H * nerv.Output[Y].H))
 
-	delta := make([]float64, len(nerv.NODE))
+	///////////дописать ++++++++++++++++=
+
+	delta := make([]float64, len(nerv.Output))
 	//изменение вессов выхода
 	for Y := range nerv.Output {
+		delta[Y] = 1 - (nerv.Output[Y].H*nerv.Output[Y].H)*difference[Y]
 		for W := range nerv.Output[Y].W {
-			nerv.Output[Y].W[W] = nerv.NODE[X][Y].W[W]
+			nerv.Output[Y].W[W] = nerv.Output[Y].W[W] + (nerv.Output[Y].W[W] * delta[Y] * speed)
 		}
-		nerv.NODE[X][Y].Sigmoid()
 	}
 
 	return nil
