@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 
@@ -17,12 +18,6 @@ func main() {
 	*a[0] = 123
 	*s[3] = 231
 	nerv.Random(rand.NormFloat64)
-	fmt.Println(*a[0])
-
-	x := []int{1, 2, 3}
-	y := &x
-	fmt.Printf("%T -> %v\n", y, y)
+	nerv.Calculation(func(x float64) float64 { return math.Tanh(x) })
 	fmt.Println(s)
-	z := []*int{&x[0], &x[1], &x[2]}
-	fmt.Printf("%T -> %v\n", z, z)
 }

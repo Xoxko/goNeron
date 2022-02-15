@@ -47,7 +47,7 @@ func (nerv *neron_cash) NewInitNode(input []int) ([]*float64, []*float64) {
 */
 func (nerv *neron_cash) Random(number func() float64) {
 	//создаем сыллку на NODE не учитывая первый слой и при этом не выделяеться память
-	coppy := nerv.NODE[1:][:]
+	coppy := nerv.NODE[1:]
 	for x := range coppy {
 		for y := range coppy[x] {
 			for w := range coppy[x][y].W {
@@ -57,6 +57,19 @@ func (nerv *neron_cash) Random(number func() float64) {
 	}
 }
 
-func (nerv *neron_cash) Calculation() {
+func (nerv *neron_cash) Calculation(sigmoid func(x float64) float64) {
+	coppy := nerv.NODE[1:]
+	for x := range coppy {
+		for y := range coppy[x] {
+			coppy[x][y].H = 0
+			for w := range coppy[x][y].W {
+				coppy[x][y].H += coppy[x][y].W[w] * nerv.NODE[x][w].H
+			}
+			coppy[x][y].sigmoid(sigmoid)
+		}
+	}
+}
 
+func (node *node) sigmoid(sigmoid func(x float64) float64) {
+	node.H = sigmoid(node.H)
 }
