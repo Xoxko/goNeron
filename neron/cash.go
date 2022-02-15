@@ -1,144 +1,62 @@
 package neron
 
-import (
-	"fmt"
-	"math"
-	"math/rand"
-	"time"
-)
-
+// init struct dataset
 var Neron neron_cash
 
 type neron_cash struct {
-	NODE   [][]node
-	Output []node
-	Input  []float64
+	NODE [][]node
 }
 type node struct {
 	W []float64
 	H float64
 }
 
-/*init sistem Neron*/
-func (nerv *neron_cash) NewNode(input, output, W_size, W_deep uint32) {
-	//Создаем двумерный массив node
-	nerv.NODE = make([][]node, W_deep)
-	//Создание кол-во входных/выходных сигналов
-	nerv.Input = make([]float64, input)
-	nerv.Output = make([]node, output)
+/*Создание массива NODE
+ */
+func (nerv *neron_cash) NewInitNode(input []int) ([]*float64, []*float64) {
+	//Создаем двухмерный массив где учитываем размер входных данных
+	nerv.NODE = make([][]node, len(input))
 
-	for X := range nerv.NODE {
-		//Создаем второй слой двумерного массива NODE[]
-		nerv.NODE[X] = make([]node, W_size)
-
-		for Y := range nerv.NODE[X] {
-			//Создаем на первом слое синапсы, равными входных сигналов
-			if X == 0 {
-				nerv.NODE[X][Y].W = make([]float64, len(nerv.Input))
-			} else {
-				//Проходим по каждой node и создаем массив синапсов
-				nerv.NODE[X][Y].W = make([]float64, W_size)
+	inp := make([]*float64, input[0])
+	out := make([]*float64, input[len(input)-1])
+	for x := range nerv.NODE {
+		//проходим по первому массиву и создаем второй ряд массива и присваем значения из входных данных
+		nerv.NODE[x] = make([]node, input[x])
+		for y := range nerv.NODE[x] {
+			switch x {
+			case 0:
+				//учитываем что на первом массиве нам ненужны синапсы поэтому присвоим nil
+				nerv.NODE[x][y].W = nil
+				inp[y] = &nerv.NODE[x][y].H
+			case len(input) - 1:
+				/*input[x-1] так как при прохождение Х буде Х>=1 , тем саммы учитываем
+				предыдущий слой и создаем синапсы равными количеству предыдущего слоя неронов*/
+				nerv.NODE[x][y].W = make([]float64, input[x-1])
+				out[y] = &nerv.NODE[x][y].H
+			default:
+				nerv.NODE[x][y].W = make([]float64, input[x-1])
 			}
 		}
 	}
-	// Выходные сигналы это копия Node так как нам нужны синапсы
-	for i := range nerv.Output {
-		nerv.Output[i].W = make([]float64, W_size)
-	}
+	return inp, out
 }
 
-// @addiction -> NewNode
-func (nerv *neron_cash) RandomNode() {
-	rand.Seed(time.Now().UnixNano())
-	for X := range nerv.NODE {
-		for Y := range nerv.NODE[X] {
-			for W := range nerv.NODE[X][Y].W {
-				nerv.NODE[X][Y].W[W] = (rand.Float64() * 2) - 1
-			}
-		}
-	}
-	for X := range nerv.Output {
-		for W := range nerv.Output[X].W {
-			nerv.Output[X].W[W] = (rand.Float64() * 2) - 1
-		}
-	}
-}
-
-/*
-@addiction -> NewNode -> RandomNode
-#Обработка данных
+/*Зависит -> NewInitNode
+Рандомизатор синапсов
+Принимает функцию
 */
-func (nerv *neron_cash) Process() []float64 {
-	output := make([]float64, len(nerv.Output))
-	//расчет первых слоев
-	for Y := range nerv.NODE[0] {
-		for W := range nerv.NODE[0][Y].W {
-			nerv.NODE[0][Y].H += nerv.NODE[0][Y].W[W] * nerv.Input[W]
-		}
-		nerv.NODE[0][Y].Sigmoid()
-	}
-	//nerv.Sigmoid()
-	for X := 1; X < len(nerv.NODE); X++ {
-		for Y := range nerv.NODE[X] {
-			for W := range nerv.NODE[X][Y].W {
-				nerv.NODE[X][Y].H += nerv.NODE[X][Y].W[W] * nerv.NODE[X-1][W].H
+func (nerv *neron_cash) Random(number func() float64) {
+	//создаем сыллку на NODE не учитывая первый слой и при этом не выделяеться память
+	coppy := nerv.NODE[1:][:]
+	for x := range coppy {
+		for y := range coppy[x] {
+			for w := range coppy[x][y].W {
+				coppy[x][y].W[w] = number()
 			}
-			nerv.NODE[X][Y].Sigmoid()
 		}
-	}
-	//Прохождение последнего слоя
-	for X := range nerv.Output {
-		for W := range nerv.Output[X].W {
-			nerv.Output[X].H += nerv.Output[X].W[W] * nerv.NODE[len(nerv.NODE)-1][W].H
-		}
-		nerv.Output[X].Sigmoid()
-	}
-
-	//передача аргументов на выход
-	for Y := range nerv.Output {
-		output[Y] = nerv.Output[Y].H
-	}
-	return output
-}
-
-func (nerv *node) Sigmoid() {
-	nerv.H = math.Tanh(nerv.H)
-}
-
-//очистка в NODE.H
-func (nerv *neron_cash) Free_summer() {
-	for X := range nerv.NODE {
-		for Y := range nerv.NODE[X] {
-			nerv.NODE[X][Y].H = 0
-		}
-	}
-	for X := range nerv.Output {
-		nerv.Output[X].H = 0
 	}
 }
 
-func (nerv *neron_cash) Training(educ []float64, speed float64) error {
+func (nerv *neron_cash) Calculation() {
 
-	if len(nerv.Output) != len(educ) {
-		return fmt.Errorf("Error: len(educ != output)")
-	}
-
-	//Вычисляем разницу ошибки
-	difference := make([]float64, len(nerv.Output))
-	for i := range nerv.Output {
-		difference[i] = nerv.Output[i].H - educ[i] - nerv.Output[i].H
-	}
-
-	///////////дописать ++++++++++++++++=
-
-	delta := make([]float64, len(nerv.Output))
-	//изменение вессов выхода
-	for Y := range nerv.Output {
-		delta[Y] = 1 - (nerv.Output[Y].H*nerv.Output[Y].H)*difference[Y]
-		for W := range nerv.Output[Y].W {
-			nerv.Output[Y].W[W] = nerv.Output[Y].W[W] + (nerv.Output[Y].W[W] * delta[Y] * speed)
-		}
-	}
-
-	return nil
 }
