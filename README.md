@@ -15,6 +15,11 @@ func main () {
 ## Создаем неросеть
 
 ```go 
+import (
+    "math"
+    nerv "github.com/Xoxko/goNeron/neron"
+    ) 
+github.com/Xoxko/goNeron/neron
 func main () {
     neron := neron.Neron
 }
@@ -68,5 +73,33 @@ func main () {
         //очищаем весса дельты и вычислений сигмоиды иначе все будет друг с другом складываться
         neron.Clear()
     }
+}
+```
+
+
+Если хотите изменить неросеть на Логистическую сигмоиду
+
+``` go
+//сигмоида
+func sigma(x float64) float64 {
+	return math.Tanh(x) //1.0 / (1.0 + math.Exp(-x))
+}
+
+//производная от сигмоиды
+func dsigma(x float64) float64 {
+	return 1.0 - math.Pow(x, 2) //x * (1.0 - x)
+}
+```
+Замените на 
+
+``` go
+//сигмоида
+func sigma(x float64) float64 {
+	return 1.0 / (1.0 + math.Exp(-x))
+}
+
+//производная от сигмоиды
+func dsigma(x float64) float64 {
+	return x * (1.0 - x)
 }
 ```
