@@ -21,7 +21,7 @@ import (
     ) 
 github.com/Xoxko/goNeron/neron
 func main () {
-    neron := neron.Neron
+    neron := nerv.Neron
 }
 ```
 Для того чтобы создать слои нужно вписать в слайс массив чиссел
@@ -36,7 +36,7 @@ sub := []int{2, 10, 20, 1}
 ```go 
 func main () {
     //Создаем неросеть
-    neron := neron.Neron
+    neron := nerv.Neron
     //создаем слои
     sub := []int{2, 10, 20, 1}
     //Функция создающая слои неронов
@@ -51,7 +51,7 @@ func main () {
 
 ```go 
 func main () {
-    neron := neron.Neron
+    neron := nerv.Neron
     sub := []int{2, 10, 20, 1}
     input, output := neron.NewInitNode(sub)
     rand.Seed(time.Now().UnixMicro())
